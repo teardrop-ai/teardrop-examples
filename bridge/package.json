@@ -1,0 +1,59 @@
+{
+  "name": "teardrop-mcp-pay",
+  "version": "0.1.0",
+  "description": "Local stdio MCP bridge that pays x402 MCP tool calls on Base with hard spend caps.",
+  "license": "MIT",
+  "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/teardrop-ai/teardrop-examples.git",
+    "directory": "bridge"
+  },
+  "keywords": [
+    "mcp",
+    "x402",
+    "teardrop",
+    "base",
+    "usdc"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "teardrop-mcp-pay": "dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./payer": {
+      "teardrop-source": "./src/payer.ts",
+      "types": "./dist/payer.d.ts",
+      "default": "./dist/payer.js"
+    }
+  },
+  "files": [
+    "dist",
+    "configs"
+  ],
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "typecheck": "tsc --noEmit",
+    "test": "tsx --test \"src/**/*.test.ts\"",
+    "start": "tsx src/index.ts",
+    "prepublishOnly": "pnpm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "@x402/core": "~2.27.0",
+    "@x402/evm": "~2.27.0",
+    "@x402/mcp": "~2.27.0",
+    "viem": "^2.56.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.0"
+  }
+}

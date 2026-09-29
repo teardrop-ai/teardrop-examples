@@ -1,0 +1,104 @@
+# Nightly paid smoke test against production: a synthetic monitor for the revenue path.
+# Needs: secret CANARY_PAYER_PRIVATE_KEY (dedicated wallet), variable CANARY_PAYER_ADDRESS,
+# and optionally secret CANARY_ALERT_WEBHOOK (Slack-compatible) for paging.
+# Budget: about $0.03 per night plus a weekly $0.05 bootstrap, roughly $1 of the $3/month allowance.
+name: prod-canary
+
+on:
+  schedule:
+    - cron: "17 6 * * *"
+    - cron: "43 6 * * 1" # weekly run that also exercises the machine bootstrap
+  workflow_dispatch:
+    inputs:
+      bootstrap:
+        description: Also run the $0.05 machine bootstrap
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: prod-canary
+  cancel-in-progress: false
+
+env:
+  TEARDROP_BASE_URL: https://api.teardrop.dev
+  TEARDROP_CLIENT_TAG: ex-canary
+  TEARDROP_STATE_DIR: ${{ github.workspace }}/.canary-state
+  MAX_PER_CALL_USDC: "10000"
+  MAX_TOTAL_USDC: "20000"
+  UV_PYTHON: "3.12"
+
+jobs:
+  wallet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Canary wallet holds at least $0.25
+        env:
+          ADDRESS: ${{ vars.CANARY_PAYER_ADDRESS }}
+        run: |
+          if [ -z "$ADDRESS" ]; then echo "::error::set the CANARY_PAYER_ADDRESS repository variable"; exit 1; fi
+          owner=$(printf '%064s' "$(echo "${ADDRESS#0x}" | tr 'A-F' 'a-f')" | tr ' ' '0')
+          body=$(jq -nc --arg data "0x70a08231$owner" \
+            '{jsonrpc:"2.0",id:1,method:"eth_call",params:[{to:"0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",data:$data},"latest"]}')
+          result=$(curl -fsS https://mainnet.base.org -H 'content-type: application/json' -d "$body" | jq -r .result)
+          balance=$(python3 -c 'import sys; print(int(sys.argv[1], 16))' "$result")
+          echo "canary wallet balance: $balance atomic USDC"
+          if [ "$balance" -lt 250000 ]; then echo "::error::canary wallet is below \$0.25 ($balance atomic)"; exit 1; fi
+
+  python:
+    needs: wallet
+    runs-on: ubuntu-latest
+    env:
+      PAYER_PRIVATE_KEY: ${{ secrets.CANARY_PAYER_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked
+      - name: MCP pay-per-call (_meta)
+        run: uv run python -m python.01_mcp_pay_per_call
+      - name: HTTP 402 (PAYMENT-SIGNATURE)
+        run: uv run python -m python.02_http_402
+      - name: A2A message (sync)
+        run: uv run python -m python.04_a2a_paid_message
+      - name: A2A message (respond-async)
+        run: uv run python -m python.04_a2a_paid_message --async
+      - name: Machine bootstrap (weekly)
+        if: github.event.schedule == '43 6 * * 1' || inputs.bootstrap
+        env:
+          MAX_PER_CALL_USDC: "50000"
+          MAX_TOTAL_USDC: "50000"
+        run: uv run python -m python.03_machine_bootstrap
+
+  typescript:
+    needs: wallet
+    runs-on: ubuntu-latest
+    env:
+      PAYER_PRIVATE_KEY: ${{ secrets.CANARY_PAYER_PRIVATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: MCP pay-per-call (@x402/mcp)
+        run: pnpm --filter teardrop-examples-ts run mcp
+      - name: HTTP 402 (@x402/fetch)
+        run: pnpm --filter teardrop-examples-ts run fetch
+
+  alert:
+    needs: [wallet, python, typescript]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Page on failure
+        env:
+          WEBHOOK: ${{ secrets.CANARY_ALERT_WEBHOOK }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$WEBHOOK" ]; then echo "::warning::CANARY_ALERT_WEBHOOK is not set; nobody was paged"; exit 0; fi
+          jq -nc --arg text "teardrop-examples prod canary failed: $RUN_URL" '{text: $text}' \
+            | curl -fsS -X POST "$WEBHOOK" -H 'content-type: application/json' -d @-

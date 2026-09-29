@@ -1,0 +1,37 @@
+[project]
+name = "teardrop-examples"
+version = "0.1.0"
+description = "Runnable x402 payment examples for the Teardrop API."
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = [
+    "x402[evm]==2.24.*",
+    "mcp>=2,<3",
+    "httpx>=0.28,<1",
+    "eth-account>=0.13,<1",
+    "teardrop-sdk>=0.5,<0.6",
+]
+
+[dependency-groups]
+dev = ["pytest>=8", "ruff>=0.6"]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".."]
+addopts = "-p no:cacheprovider"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "S"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["python", "conftest"]

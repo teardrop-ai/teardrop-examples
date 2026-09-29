@@ -1,0 +1,11 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "packageRules": [
+    {
+      "description": "x402 and MCP SDKs move fast; review each minor on its own and rely on the canary",
+      "matchPackageNames": ["x402", "mcp", "@x402/*", "@modelcontextprotocol/sdk"],
+      "labels": ["payments-sdk"]
+    }
+  ]
+}

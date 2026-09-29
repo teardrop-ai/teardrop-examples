@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "teardrop": {
+      "command": "npx",
+      "args": ["-y", "teardrop-mcp-pay"],
+      "env": {
+        "PAYER_KEY_FILE": "/ABSOLUTE/PATH/TO/.teardrop/payer.key",
+        "MAX_PER_CALL_USDC": "10000",
+        "MAX_DAILY_USDC": "100000"
+      }
+    }
+  }
+}

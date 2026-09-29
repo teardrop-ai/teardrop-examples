@@ -1,0 +1,3 @@
+# Virtual uv workspace root so `uv run python -m python.<example>` works from the repo root.
+[tool.uv.workspace]
+members = ["python"]

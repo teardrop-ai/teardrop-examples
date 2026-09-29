@@ -1,0 +1,28 @@
+{
+  "name": "teardrop-examples-ts",
+  "private": true,
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "mcp": "tsx --conditions=teardrop-source --env-file-if-exists=../.env 01_mcp_pay_per_call/index.ts",
+    "fetch": "tsx --conditions=teardrop-source --env-file-if-exists=../.env 02_fetch_402/index.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.31.0",
+    "@x402/core": "~2.27.0",
+    "@x402/evm": "~2.27.0",
+    "@x402/fetch": "~2.27.0",
+    "@x402/mcp": "~2.27.0",
+    "teardrop-mcp-pay": "workspace:*",
+    "viem": "^2.56.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.0",
+    "tsx": "^4.23.0",
+    "typescript": "^5.9.0"
+  }
+}

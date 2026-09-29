@@ -1,0 +1,27 @@
+# Secrets: never commit keys or filled-in env files
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+payer.key
+credentials*.json
+.teardrop/
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/

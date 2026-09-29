@@ -1,0 +1,14 @@
+{
+  "name": "teardrop-examples-root",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "pnpm@9.5.0",
+  "engines": {
+    "node": ">=22.9"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  }
+}
